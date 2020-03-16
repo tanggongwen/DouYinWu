@@ -1,0 +1,70 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+    buildToolsVersion "28.0.3"
+    defaultConfig {
+        applicationId "com.example.qd.douyinwu"
+        minSdkVersion 17
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+        vectorDrawables.useSupportLibrary = true
+        buildConfigField "long", "BUILD_TIMESTAMP", System.currentTimeMillis() + "L"
+        ndk {
+            abiFilters 'armeabi-v7a'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    //饺子视频播放器
+    implementation 'cn.jzvd:jiaozivideoplayer:6.2.10'
+    implementation 'com.android.support:recyclerview-v7:28.0.0'
+    implementation 'com.android.support:design:28.0.0'
+    //    implementation 'com.github.bumptech.glide:glide:4.8.0'
+    //    annotationProcessor 'com.github.bumptech.glide:compiler:4.8.0'
+    //    implementation 'jp.wasabeef:glide-transformations:2.0.1'
+    //七牛云短视频拍摄
+    implementation files('libs/pldroid-player-2.1.8.jar')
+    implementation files('libs/pldroid-shortvideo-3.1.1.jar')
+    implementation 'com.qiniu:qiniu-android-sdk:7.3.11'
+    implementation 'com.h6ah4i.android.widget.advrecyclerview:advrecyclerview:0.10.6'
+    implementation project(path: ':pictureselector')
+    //腾讯云直播
+    implementation files('libs/cos-android-sdk-5.4.6.jar')
+    implementation files('libs/qcloud-foundation.1.3.2.jar')
+    implementation files('libs/xstream-1.4.7.jar')
+    implementation 'com.tencent.liteav:LiteAVSDK_Professional:latest.release'
+    //  MLVB 需要依赖腾讯云 IM 服务
+    implementation 'com.tencent.imsdk:imsdk:4.5.45'
+    //  弹幕功能需要依赖此库
+    implementation 'com.github.ctiao:dfm:0.4.4'
+    implementation project(path: ':beauty')
+    //  Demo 依赖的图片加载库
+    implementation 'com.github.bumptech.glide:glide:3.7.0'
+    //  MLVB 需要使用 gson 进行 json 解析
+    implementation 'com.google.code.gson:gson:2.3.1'
+    //  MLVB 需要依赖 okhttp 拦截器
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.8.1'
+    //json解析器
+    //    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'com.lzy.net:okgo:3.0.4'
+    implementation files('libs/fastjson-1.2.24.jar')
+    //万能的adapter
+    implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.22'
+    implementation files('libs/jsoup-1.11.2.jar')
+    implementation 'me.drakeet.multitype:multitype:3.3.0'
+
+}

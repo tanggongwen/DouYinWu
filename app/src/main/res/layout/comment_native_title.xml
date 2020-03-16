@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:id="@+id/ll_comment_top_title"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:background="@color/main_color"
+    android:layout_height="wrap_content"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+        android:visibility="gone"
+        android:id="@+id/tv_single_statusBar"
+        android:layout_width="match_parent"
+        android:layout_height="20dp" />
+
+
+    <RelativeLayout
+        android:visibility="gone"
+        android:id="@+id/rl_title"
+        android:paddingRight="15dp"
+        android:paddingLeft="15dp"
+        android:layout_width="match_parent"
+        android:layout_height="45dp">
+
+        <ImageView
+            android:id="@+id/iv_title_left"
+            android:layout_width="30dp"
+            android:padding="5dp"
+            android:src="@mipmap/ic_back_black"
+            android:layout_centerVertical="true"
+            android:layout_height="30dp" />
+
+        <TextView
+            android:id="@+id/tv_comment_center"
+            android:gravity="center"
+            android:layout_centerInParent="true"
+            android:textSize="16dp"
+            android:text="直播"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ImageView
+            android:id="@+id/iv_title_center"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_centerInParent="true"
+            android:src="@mipmap/ic_launcher"
+            android:layout_height="wrap_content" />
+
+
+        <TextView
+            android:visibility="gone"
+            android:id="@+id/tv_title_right"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:text="武汉"
+            android:textSize="14sp"
+            android:layout_centerVertical="true"
+            android:layout_height="wrap_content" />
+
+
+        <ImageView
+            android:id="@+id/iv_title_Right"
+            android:visibility="gone"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="15dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+
+    </RelativeLayout>
+
+</LinearLayout>
+
