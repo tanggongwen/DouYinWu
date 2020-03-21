@@ -36,6 +36,7 @@ import com.example.qd.douyinwu.view.SectionProgressBar;
 import com.lidong.photopicker.SelectModel;
 import com.lidong.photopicker.intent.PhotoPickerIntent;
 import com.lidong.photopicker.intent.PhotoPreviewIntent;
+import com.qiniu.android.common.Constants;
 import com.qiniu.pili.droid.shortvideo.PLAudioEncodeSetting;
 import com.qiniu.pili.droid.shortvideo.PLAuthenticationResultCallback;
 import com.qiniu.pili.droid.shortvideo.PLCameraSetting;
@@ -590,11 +591,9 @@ public class VideoRecordActivity extends Activity implements PLRecordStateListen
             public void run() {
                 mProcessingDialog.dismiss();
                 int screenOrientation = (ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE == getRequestedOrientation()) ? 0 : 1;
-                if (mIsEditVideo) {
-//                    VideoEditActivity.start(VideoRecordActivity.this, filePath, screenOrientation);
-                } else {
-//                    PlaybackActivity.start(VideoRecordActivity.this, filePath, screenOrientation);
-                }
+                Intent intent = new Intent(VideoRecordActivity.this,UploadVideoActivity.class);
+                intent.putExtra("shortVideoPath",filePath);
+                startActivity(intent);
             }
         });
     }

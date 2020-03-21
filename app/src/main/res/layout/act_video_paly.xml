@@ -38,11 +38,11 @@
     <ImageView
         android:layout_marginBottom="20dp"
         android:id="@+id/iv_public"
-        android:src="@mipmap/ic_launcher"
+        android:src="@drawable/ic_photo_camera_48px"
         android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
-        android:layout_width="30dp"
-        android:layout_height="30dp" />
+        android:layout_width="40dp"
+        android:layout_height="40dp" />
 
     <RelativeLayout
         android:id="@+id/rl_bottom"

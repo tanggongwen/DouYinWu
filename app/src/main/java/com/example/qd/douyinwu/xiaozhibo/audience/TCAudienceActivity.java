@@ -172,8 +172,12 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
         mGroupId = intent.getStringExtra(TCConstants.GROUP_ID);
         mPusherNickname = intent.getStringExtra(TCConstants.PUSHER_NAME);
         mPusherAvatar = intent.getStringExtra(TCConstants.PUSHER_AVATAR);
-        mHeartCount = Long.decode(intent.getStringExtra(TCConstants.HEART_COUNT));
-        mCurrentAudienceCount = Long.decode(intent.getStringExtra(TCConstants.MEMBER_COUNT));
+        if (null!=intent.getStringExtra(TCConstants.HEART_COUNT)){
+            mHeartCount = Long.decode(intent.getStringExtra(TCConstants.HEART_COUNT));
+        }
+        if (null!=intent.getStringExtra(TCConstants.MEMBER_COUNT)){
+            mCurrentAudienceCount = Long.decode(intent.getStringExtra(TCConstants.MEMBER_COUNT));
+        }
         mFileId = intent.getStringExtra(TCConstants.FILE_ID);
         mTimeStamp = intent.getStringExtra(TCConstants.TIMESTAMP);
         mTitle = intent.getStringExtra(TCConstants.ROOM_TITLE);

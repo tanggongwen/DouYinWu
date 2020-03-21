@@ -67,6 +67,8 @@
         <activity
             android:name=".xiaozhibo.anchor.prepare.TCAnchorPrepareActivity"
             android:screenOrientation="portrait" />
+        <activity android:name=".activity.UploadVideoActivity"
+            android:screenOrientation="portrait"/>
     </application>
 
 </manifest>
