@@ -22,6 +22,15 @@ import android.widget.Toast;
 
 
 import com.example.qd.douyinwu.R;
+import com.example.qd.douyinwu.activity.UploadVideoActivity;
+import com.example.qd.douyinwu.been.ChooseGoodsBean;
+import com.example.qd.douyinwu.been.ClassicGoodsBean;
+import com.example.qd.douyinwu.been.GoodsBean;
+import com.example.qd.douyinwu.intef.ResultListener;
+import com.example.qd.douyinwu.utils.BaseOkGoUtils;
+import com.example.qd.douyinwu.utils.JsonUtils;
+import com.example.qd.douyinwu.utils.L;
+import com.example.qd.douyinwu.utils.PersonInfoManager;
 import com.example.qd.douyinwu.xiaozhibo.TCGlobalConfig;
 import com.example.qd.douyinwu.xiaozhibo.common.msg.TCChatEntity;
 import com.example.qd.douyinwu.xiaozhibo.common.msg.TCChatMsgListAdapter;
@@ -48,11 +57,16 @@ import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import master.flame.danmaku.controller.IDanmakuView;
+
+import static com.example.qd.douyinwu.constant.HttpConstant.CLOSE_LIVE;
+import static com.example.qd.douyinwu.constant.HttpConstant.GET_GOODS_LIST;
 
 
 /**
@@ -84,6 +98,9 @@ public class TCBaseAnchorActivity extends Activity implements IMLVBLiveRoomListe
     private String mNickName;              // 个人昵称
     private String mUserId;                // 个人用户id
     private String mLocation;              // 个人定位地址
+    private String room;
+    private String roomId;
+    private String pushUrl;
     protected long                      mTotalMemberCount = 0;  // 总进房观众数量
     protected long                      mCurrentMemberCount = 0;// 当前观众数量
     protected long                      mHeartCount = 0;        // 点赞数量
@@ -112,11 +129,13 @@ public class TCBaseAnchorActivity extends Activity implements IMLVBLiveRoomListe
         Intent intent = getIntent();
         mUserId = intent.getStringExtra(TCConstants.USER_ID);
         mTitle = intent.getStringExtra(TCConstants.ROOM_TITLE);
+        pushUrl = intent.getStringExtra(TCConstants.PUSHURL);
         mCoverPicUrl = intent.getStringExtra(TCConstants.COVER_PIC);
         mAvatarPicUrl = intent.getStringExtra(TCConstants.USER_HEADPIC);
         mNickName = intent.getStringExtra(TCConstants.USER_NICK);
         mLocation = intent.getStringExtra(TCConstants.USER_LOC);
-
+        room = intent.getStringExtra(TCConstants.ROOM);
+        roomId = intent.getStringExtra(TCConstants.ROOM_ID);
         mArrayListChatEntity = new ArrayList<>();
         mErrDlgFragment = new ErrorDialogFragment();
         mLiveRoom = MLVBLiveRoom.sharedInstance(this);
@@ -240,7 +259,7 @@ public class TCBaseAnchorActivity extends Activity implements IMLVBLiveRoomListe
         } catch (JSONException e) {
             roomInfo = mTitle;
         }
-        mLiveRoom.createRoom("", roomInfo, new IMLVBLiveRoomListener.CreateRoomCallback() {
+        mLiveRoom.createRoom(room, pushUrl,roomInfo,new IMLVBLiveRoomListener.CreateRoomCallback() {
             @Override
             public void onSuccess(String roomId) {
                 Log.w(TAG, String.format("创建直播间%s成功", roomId));
@@ -279,6 +298,7 @@ public class TCBaseAnchorActivity extends Activity implements IMLVBLiveRoomListe
             @Override
             public void onSuccess() {
                 Log.i(TAG, "exitRoom Success");
+                closeLive();
             }
 
             @Override
@@ -640,6 +660,7 @@ public class TCBaseAnchorActivity extends Activity implements IMLVBLiveRoomListe
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     dialog.dismiss();
+                    closeLive();
                     showPublishFinishDetailsDialog();
                 }
             });
@@ -649,6 +670,24 @@ public class TCBaseAnchorActivity extends Activity implements IMLVBLiveRoomListe
         alertDialog.setCanceledOnTouchOutside(false);
     }
 
+
+    private void closeLive(){
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("user_id", PersonInfoManager.INSTANCE.getUserId());
+            map.put("id",roomId);
+            BaseOkGoUtils.postOkGo(TCBaseAnchorActivity.this,map, CLOSE_LIVE, new ResultListener() {
+                @Override
+                public void onSucceeded(Object object) {
+                    try {
+
+
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            });
+    }
     /**
      * 显示错误并且退出直播的弹窗
      *

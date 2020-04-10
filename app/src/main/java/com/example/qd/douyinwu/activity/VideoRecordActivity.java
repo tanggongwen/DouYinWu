@@ -7,6 +7,7 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.hardware.SensorManager;
 import android.media.AudioFormat;
+import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,15 +25,18 @@ import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.example.qd.douyinwu.R;
 import com.example.qd.douyinwu.utils.Config;
 import com.example.qd.douyinwu.utils.GetPathFromUri;
 import com.example.qd.douyinwu.utils.PermissionChecker;
 import com.example.qd.douyinwu.utils.RecordSettings;
 import com.example.qd.douyinwu.utils.ToastUtils;
+import com.example.qd.douyinwu.utils.Utils;
 import com.example.qd.douyinwu.view.CustomProgressDialog;
 import com.example.qd.douyinwu.view.FocusIndicator;
 import com.example.qd.douyinwu.view.SectionProgressBar;
+import com.example.qd.douyinwu.xiaozhibo.anchor.prepare.TCAnchorPrepareActivity;
 import com.lidong.photopicker.SelectModel;
 import com.lidong.photopicker.intent.PhotoPickerIntent;
 import com.lidong.photopicker.intent.PhotoPreviewIntent;
@@ -53,16 +57,22 @@ import com.qiniu.pili.droid.shortvideo.PLShortVideoRecorder;
 import com.qiniu.pili.droid.shortvideo.PLVideoEncodeSetting;
 import com.qiniu.pili.droid.shortvideo.PLVideoFrame;
 import com.qiniu.pili.droid.shortvideo.PLVideoSaveListener;
+import com.zhihu.matisse.Matisse;
+import com.zhihu.matisse.MimeType;
+import com.zhihu.matisse.engine.impl.GlideEngine;
+import com.zhihu.matisse.internal.entity.CaptureStrategy;
 
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 import static com.example.qd.douyinwu.utils.RecordSettings.RECORD_SPEED_ARRAY;
 import static com.example.qd.douyinwu.utils.RecordSettings.chooseCameraFacingId;
+import static com.lidong.photopicker.PhotoPickerActivity.EXTRA_RESULT;
 
 
 public class VideoRecordActivity extends Activity implements PLRecordStateListener, PLVideoSaveListener, PLFocusListener {
@@ -80,6 +90,7 @@ public class VideoRecordActivity extends Activity implements PLRecordStateListen
      * NOTICE: TUSDK needs extra cost
      */
     private static final boolean USE_TUSDK = true;
+    private static final int REQUEST_CODE_CHOOSE = 2003;
 
     private PLShortVideoRecorder mShortVideoRecorder;
 
@@ -429,40 +440,30 @@ public class VideoRecordActivity extends Activity implements PLRecordStateListen
     }
 
     public void onClickSaveToDraft(View v) {
-//        final EditText editText = new EditText(this);
-//        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this)
-//                .setView(editText)
-//                .setTitle(getString(R.string.dlg_save_draft_title))
-//                .setPositiveButton(getString(R.string.dlg_save_draft_yes), new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialogInterface, int i) {
-//                        ToastUtils.s(VideoRecordActivity.this,
-//                                mShortVideoRecorder.saveToDraftBox(editText.getText().toString()) ?
-//                                        getString(R.string.toast_draft_save_success) : getString(R.string.toast_draft_save_fail));
-//                    }
-//                });
-//        alertDialog.show();
-        PhotoPickerIntent intent = new PhotoPickerIntent(VideoRecordActivity.this);
-        intent.setSelectModel(SelectModel.MULTI);
-        intent.setShowCarema(false); // 是否显示拍照
-        if(imagePaths.size()==0){
-            intent.setMaxTotal(6+3 - imagePaths.size()); // 最多选择照片数量，默认为6
-        }else{
-            intent.setMaxTotal(7+3 - imagePaths.size()); // 最多选择照片数量，默认为6
-        }
-        intent.setSelectedPaths(imagePaths); // 已选中的照片地址， 用于回显选中状态
-        startActivityForResult(intent, REQUEST_CAMERA_CODE);
+        Matisse.from(VideoRecordActivity.this)
+                .choose(MimeType.ofVideo())//图片类型
+                .countable(true)//true:选中后显示数字;false:选中后显示对号
+                .maxSelectable(1)//可选的最大数
+                .capture(false)//选择照片时，是否显示拍照
+                .captureStrategy(new CaptureStrategy(true, "com.example.qd.douyinwu"))//参数1 true表示拍照存储在共有目录，false表示存储在私有目录；参数2与 AndroidManifest中authorities值相同，用于适配7.0系统 必须设置
+                .imageEngine(new GlideEngine())//图片加载引擎
+                .forResult(REQUEST_CODE_CHOOSE);//
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK) {
-//            String selectedFilepath = GetPathFromUri.getPath(this, data.getData());
-//            Log.i(TAG, "Select file: " + selectedFilepath);
-//            if (selectedFilepath != null && !"".equals(selectedFilepath)) {
-//                mShortVideoRecorder.setMusicFile(selectedFilepath);
-//            }
-        }
+       if (requestCode ==REQUEST_CODE_CHOOSE){
+           List<Uri> result = Matisse.obtainResult(data);
+           if (result.size()>0){
+               String localVideoPath = Utils.getRealPathFromURI(getApplicationContext(),result.get(0));
+               Intent intent = new Intent(VideoRecordActivity.this,UploadVideoActivity.class);
+               intent.putExtra("shortVideoPath",localVideoPath);
+               startActivity(intent);
+               mShortVideoRecorder.deleteLastSection();
+               finish();
+           }
+       }
+
     }
 
     @Override
@@ -594,6 +595,7 @@ public class VideoRecordActivity extends Activity implements PLRecordStateListen
                 Intent intent = new Intent(VideoRecordActivity.this,UploadVideoActivity.class);
                 intent.putExtra("shortVideoPath",filePath);
                 startActivity(intent);
+                mShortVideoRecorder.deleteLastSection();
             }
         });
     }

@@ -2,6 +2,8 @@ package com.example.qd.douyinwu;
 
 import android.app.Application;
 
+import com.example.qd.douyinwu.utils.UmengShareManager;
+import com.example.qd.douyinwu.utils.Utils;
 import com.example.qd.douyinwu.xiaozhibo.TCGlobalConfig;
 import com.example.qd.douyinwu.xiaozhibo.liteav.demo.lvb.liveroom.MLVBLiveRoomImpl;
 import com.example.qd.douyinwu.xiaozhibo.login.TCUserMgr;
@@ -20,6 +22,9 @@ public class ShortVideoApplication extends Application {
 
         // 必须：初始化 MLVB 组件
         MLVBLiveRoomImpl.sharedInstance(this);
+
+        UmengShareManager.INSTANCE.init(getApplicationContext());
+        Utils.init(getApplicationContext());
 
         // 必须：初始化全局的 用户信息管理类，记录个人信息。
         TCUserMgr.getInstance().initContext(getApplicationContext());

@@ -14,6 +14,9 @@ public class ShortVideo {
     private String s_pic_url;//	视频封面链接
     private String goods_id;//没有商品为0, 有商品是为商品主键
     private String goods_name;//商品标题
+    private String original_img1;
+    private String market_price;
+    private String s_share;
     private String head_pic;//	发布者头像链接
     private int is_like_host;//	是否关注当前主播, 0:没关注, 1:已关注
     private int is_like_video;//是否点赞当前视频, 0:没点赞 1: 已点赞
@@ -144,5 +147,29 @@ public class ShortVideo {
 
     public String getS_id() {
         return s_id;
+    }
+
+    public String getOriginal_img1() {
+        return original_img1;
+    }
+
+    public void setOriginal_img1(String original_img1) {
+        this.original_img1 = original_img1;
+    }
+
+    public String getMarket_price() {
+        return market_price;
+    }
+
+    public void setMarket_price(String market_price) {
+        this.market_price = market_price;
+    }
+
+    public String getS_share() {
+        return s_share;
+    }
+
+    public void setS_share(String s_share) {
+        this.s_share = s_share;
     }
 }

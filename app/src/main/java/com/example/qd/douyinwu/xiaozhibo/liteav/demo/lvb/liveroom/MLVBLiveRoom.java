@@ -154,6 +154,8 @@ public abstract class MLVBLiveRoom {
      */
     public abstract void createRoom(final String roomID, final String roomInfo, final IMLVBLiveRoomListener.CreateRoomCallback callback);
 
+    public abstract void createRoom(final String roomID,final String pushUrl ,final String roomInfo, final IMLVBLiveRoomListener.CreateRoomCallback callback);
+
 	 /**
      * 进入房间（观众调用）
 	 *
@@ -167,6 +169,8 @@ public abstract class MLVBLiveRoom {
      *
      */
     public abstract void enterRoom(final String roomID, final TXCloudVideoView view, final IMLVBLiveRoomListener.EnterRoomCallback callback);
+
+    public abstract void enterRoom(final String roomID,String playUrl ,final TXCloudVideoView view, final IMLVBLiveRoomListener.EnterRoomCallback callback);
 
     /**
      * 离开房间

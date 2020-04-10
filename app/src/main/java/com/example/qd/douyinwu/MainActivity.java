@@ -1,24 +1,40 @@
 package com.example.qd.douyinwu;
 
 import android.content.Intent;
+import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewPager;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.example.qd.douyinwu.activity.ActVideoPlay;
+import com.example.qd.douyinwu.adapter.TabFragmentPagerAdapter;
+import com.example.qd.douyinwu.fragment.ActVideoPlayFragment;
 import com.example.qd.douyinwu.activity.ActZhiBoList;
 import com.example.qd.douyinwu.activity.NativeBaseActivity;
+import com.example.qd.douyinwu.fragment.LiveFragment;
+import com.example.qd.douyinwu.fragment.MarketFragment;
+import com.example.qd.douyinwu.fragment.MineFragment;
 import com.example.qd.douyinwu.xiaozhibo.anchor.TCCameraAnchorActivity;
 import com.example.qd.douyinwu.xiaozhibo.anchor.prepare.TCAnchorPrepareActivity;
 import com.example.qd.douyinwu.xiaozhibo.common.utils.TCConstants;
 import com.example.qd.douyinwu.xiaozhibo.login.TCUserMgr;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends NativeBaseActivity{
 
-    private TextView tv_zhibolist;
-    private TextView tv_shortvideoplay;
-    private TextView tv_zhibotuiliu;//直播推流
-    private TextView tv_zhiboplay;//直播播放页
+    private TextView tvHome;
+    private TextView tvLive;
+    private TextView tvMarket;//直播推流
+    private TextView tvMine;//直播播放页
+    private ViewPager viewPager;
+    private TabFragmentPagerAdapter adapter;
+    private List<Fragment> list;
+    private ActVideoPlayFragment actVideoPlayFragment = new ActVideoPlayFragment();
+    private long mExitTime;
 
     @Override
     public int setLayoutResourceID() {
@@ -27,14 +43,47 @@ public class MainActivity extends NativeBaseActivity{
 
     @Override
     public void setUpView() {
-        tv_zhibolist = findViewById(R.id.tv_zhibolist);
-        tv_shortvideoplay = findViewById(R.id.tv_shortvideoplay);
-        tv_zhibolist.setOnClickListener(this);
-        tv_shortvideoplay.setOnClickListener(this);
-        tv_zhibotuiliu = findViewById(R.id.tv_zhibotuiliu);
-        tv_zhibotuiliu.setOnClickListener(this);
-        tv_zhiboplay = findViewById(R.id.tv_zhiboplay);
-        tv_zhiboplay.setOnClickListener(this);
+        tvHome = findViewById(R.id.tvHome);
+        tvLive = findViewById(R.id.tvLive);
+        tvMarket = findViewById(R.id.tvMarket);
+        tvMine = findViewById(R.id.tvMine);
+        viewPager = (ViewPager) findViewById(R.id.myViewPager);
+        //绑定点击事件
+        //把Fragment添加到List集合里面
+        list = new ArrayList<>();
+        list.add(actVideoPlayFragment);
+        list.add(new LiveFragment());
+        list.add(new MarketFragment());
+        list.add(new MineFragment());
+        tvHome.setOnClickListener(this);
+        tvMine.setOnClickListener(this);
+        tvMarket.setOnClickListener(this);
+        tvLive.setOnClickListener(this);
+        adapter = new TabFragmentPagerAdapter(getSupportFragmentManager(), list);
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int i, float v, int i1) {
+
+            }
+
+            @Override
+            public void onPageSelected(int i) {
+                if (i==0){
+                    actVideoPlayFragment.resume();
+                }else {
+                    actVideoPlayFragment.pause();
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int i) {
+
+            }
+        });
+        viewPager.setAdapter(adapter);
+        viewPager.setOffscreenPageLimit(4);
+        viewPager.setCurrentItem(0);  //初始化显示第一个页面
+
     }
 
     @Override
@@ -45,19 +94,22 @@ public class MainActivity extends NativeBaseActivity{
     @Override
     public void onClick(View v) {
         switch (v.getId()){
-            case R.id.tv_zhibolist:
-                startActivity(new Intent(MainActivity.this, ActZhiBoList.class));
+            case R.id.tvHome:
+                viewPager.setCurrentItem(0);
                 break;
-            case R.id.tv_shortvideoplay:
-                startActivity(new Intent(MainActivity.this, ActVideoPlay.class));
+            case R.id.tvLive:
+                viewPager.setCurrentItem(1);
+                actVideoPlayFragment.pause();
                 break;
-            case R.id.tv_zhibotuiliu:
-//                startPublish();
-                startActivity(new Intent(MainActivity.this, TCAnchorPrepareActivity.class));
+            case R.id.tvMarket:
+                viewPager.setCurrentItem(2);
+                actVideoPlayFragment.pause();
                 break;
-            case R.id.tv_zhiboplay:
+            case R.id.tvMine:
+                viewPager.setCurrentItem(3);
+                actVideoPlayFragment.pause();
+                break;
 
-                break;
         }
     }
 
@@ -89,6 +141,27 @@ public class MainActivity extends NativeBaseActivity{
             startActivity(intent);
             finish();
         }
+    }
+
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        //判断用户是否点击了“返回键”
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            //与上次点击返回键时刻作差
+            if ((System.currentTimeMillis() - mExitTime) > 2000) {
+                //大于2000ms则认为是误操作，使用Toast进行提示
+                Toast.makeText(this,"再按一次退出应用",Toast.LENGTH_SHORT).show();
+                //并记录下本次点击“返回键”的时刻，以便下次进行判断
+                mExitTime = System.currentTimeMillis();
+            } else {
+                //小于2000ms则认为是用户确实希望退出程序-调用System.exit()方法进行退出
+                finish();
+//                System.exit(0);
+            }
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }
 

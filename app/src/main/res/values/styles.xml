@@ -213,7 +213,7 @@
         <!--<item name="windowMinWidthMinor">90%</item>-->
 
 
-        <!--<item name="android:textColorPrimary">#000000</item>-->
+        <item name="android:textColorPrimary">#ffffff</item>
 
         <!--<item name="colorAccent">#0accac</item>-->
     </style>

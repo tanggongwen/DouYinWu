@@ -20,12 +20,22 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.example.qd.douyinwu.R;
+import com.example.qd.douyinwu.activity.WebActivity;
+import com.example.qd.douyinwu.been.LiveData;
+import com.example.qd.douyinwu.been.LiveStateBean;
+import com.example.qd.douyinwu.intef.ResultListener;
+import com.example.qd.douyinwu.utils.BaseOkGoUtils;
+import com.example.qd.douyinwu.utils.JsonUtils;
+import com.example.qd.douyinwu.utils.L;
+import com.example.qd.douyinwu.utils.PersonInfoManager;
 import com.example.qd.douyinwu.xiaozhibo.TCGlobalConfig;
 import com.example.qd.douyinwu.xiaozhibo.common.msg.TCChatEntity;
 import com.example.qd.douyinwu.xiaozhibo.common.msg.TCChatMsgListAdapter;
@@ -48,6 +58,7 @@ import com.example.qd.douyinwu.xiaozhibo.liteav.demo.lvb.liveroom.roomutil.commo
 import com.example.qd.douyinwu.xiaozhibo.liteav.demo.lvb.liveroom.roomutil.commondef.AudienceInfo;
 import com.example.qd.douyinwu.xiaozhibo.liteav.demo.lvb.liveroom.roomutil.commondef.MLVBCommonDef;
 import com.example.qd.douyinwu.xiaozhibo.login.TCUserMgr;
+import com.qiniu.android.utils.StringUtils;
 import com.tencent.liteav.demo.beauty.BeautyPanel;
 import com.tencent.liteav.demo.beauty.BeautyParams;
 import com.tencent.rtmp.TXLiveConstants;
@@ -56,13 +67,18 @@ import com.tencent.rtmp.ui.TXCloudVideoView;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import master.flame.danmaku.controller.IDanmakuView;
+
+import static com.example.qd.douyinwu.constant.HttpConstant.GET_ZHIBO_LITS;
+import static com.example.qd.douyinwu.constant.HttpConstant.PLAYALIVE;
 
 /**
  * Module:   TCAudienceActivity
@@ -100,6 +116,10 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
     private ImageView mIvAvatar;              // 主播头像控件
     private TextView mTvPusherName;          // 主播昵称控件
     private TextView mMemberCount;           // 当前观众数量控件
+    private TextView tvGoodsName;
+    private TextView tvGoodsPrice;
+    private ImageView imgGoodCover;
+    private LinearLayout llytGoodsDetail;
 
     private String mPusherAvatar;          // 主播头像连接地址
     private long                                mCurrentAudienceCount;  // 当前观众数量
@@ -109,11 +129,18 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
     private String mPusherNickname;        // 主播昵称
     private String mPusherId;              // 主播id
     private String mGroupId = "";          // 房间id
+    private String mPlayUrl = "";
     private String mUserId = "";           // 我的id
     private String mNickname = "";         // 我的昵称
     private String mAvatar = "";           // 我的头像
     private String mFileId = "";
     private String mTimeStamp = "";
+    private String keyRoomId = "";
+    private String goodsName = "";
+    private String goodsId = "";
+    private String goodsPic = "";
+    private String peopleNum = "";
+    private  String goodsPrice="";
 
     //头像列表控件
     private RecyclerView mUserAvatarList;
@@ -168,10 +195,18 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
         setContentView(R.layout.activity_audience);
 
         Intent intent = getIntent();
+        keyRoomId = intent.getStringExtra(TCConstants.KEYROOM_ID);
+
         mPusherId = intent.getStringExtra(TCConstants.PUSHER_ID);
         mGroupId = intent.getStringExtra(TCConstants.GROUP_ID);
+        mPlayUrl = intent.getStringExtra(TCConstants.PLAY_URL);
         mPusherNickname = intent.getStringExtra(TCConstants.PUSHER_NAME);
         mPusherAvatar = intent.getStringExtra(TCConstants.PUSHER_AVATAR);
+        goodsId = intent.getStringExtra(TCConstants.GOODS_ID);
+        goodsName = intent.getStringExtra(TCConstants.GOODS_NAME);
+        goodsPic = intent.getStringExtra(TCConstants.GOODS_PIC);
+        goodsPrice = intent.getStringExtra(TCConstants.GOODS_PRICE);
+        peopleNum = intent.getStringExtra(TCConstants.PEOPLE_NUM);
         if (null!=intent.getStringExtra(TCConstants.HEART_COUNT)){
             mHeartCount = Long.decode(intent.getStringExtra(TCConstants.HEART_COUNT));
         }
@@ -199,13 +234,31 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
         LiveRoomBeautyKit manager = new LiveRoomBeautyKit(mLiveRoom);
         mBeautyControl.setProxy(manager);
         startPlay();
-
+        playLive(keyRoomId);
         //在这里停留，让列表界面卡住几百毫秒，给sdk一点预加载的时间，形成秒开的视觉效果
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+
+    private void playLive(String id){
+        Map<String, Object> map = new HashMap<>();
+        map.put("id",id);
+        BaseOkGoUtils.postOkGo(this,map, PLAYALIVE, new ResultListener() {
+            @Override
+            public void onSucceeded(Object object) {
+                try {
+                    L.e("qpf","获取直播详情 -- " + object.toString());
+
+
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
 
@@ -221,6 +274,10 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
         mControlLayer = (RelativeLayout) findViewById(R.id.anchor_rl_controllLayer);
         mTCSwipeAnimationController = new TCSwipeAnimationController(this);
         mTCSwipeAnimationController.setAnimationView(mControlLayer);
+        imgGoodCover = findViewById(R.id.imgGoodCover);
+        tvGoodsName = findViewById(R.id.tvGoodsName);
+        tvGoodsPrice = findViewById(R.id.tvGoodsPrice);
+        llytGoodsDetail = findViewById(R.id.llytGoodsDetail);
 
         mTXCloudVideoView = (TXCloudVideoView) findViewById(R.id.anchor_video_view);
         mTXCloudVideoView.setLogMargin(10, 10, 45, 55);
@@ -261,6 +318,19 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
         mBgImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
         mBtnLinkMic = (Button) findViewById(R.id.audience_btn_linkmic);
+        if (goodsId.equals("0")){
+            llytGoodsDetail.setVisibility(View.GONE);
+        }else {
+            llytGoodsDetail.setVisibility(View.VISIBLE);
+        }
+        llytGoodsDetail.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(TCAudienceActivity.this, WebActivity.class);
+                intent.putExtra("url","http://slive.sdyilian.top/View/Goods/goods_detail?user_id="+ PersonInfoManager.INSTANCE.getUserId() +"&goods_id="+goodsId+"&from=1");
+                startActivity(intent);
+            }
+        });
         if (TCGlobalConfig.ENABLE_LINKMIC) {
             mBtnLinkMic.setVisibility(View.VISIBLE);
             mBtnLinkMic.setOnClickListener(new View.OnClickListener() {
@@ -291,7 +361,14 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
                 }
             }
         });
-
+        mMemberCount.setText(peopleNum);
+        Glide.with(imgGoodCover.getContext()).load(goodsPic).into(imgGoodCover);
+        tvGoodsName.setText(goodsName);
+        if (!StringUtils.isNullOrEmpty(goodsPrice)){
+            tvGoodsPrice.setText("¥"+goodsPrice);
+        }else {
+            tvGoodsPrice.setText("暂无售价");
+        }
         //美颜功能
         mBeautyControl = (BeautyPanel) findViewById(R.id.beauty_panel);
 
@@ -355,7 +432,7 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
         if (mPlaying) return;
         mLiveRoom.setSelfProfile(mNickname, mAvatar);
         mLiveRoom.setListener(this);
-        mLiveRoom.enterRoom(mGroupId, mTXCloudVideoView, new IMLVBLiveRoomListener.EnterRoomCallback() {
+        mLiveRoom.enterRoom(mGroupId, mPlayUrl,mTXCloudVideoView, new IMLVBLiveRoomListener.EnterRoomCallback() {
             @Override
             public void onError(int errCode, String errInfo) {
                 showErrorAndQuit("加入房间失败，Error:" + errCode);
@@ -678,7 +755,7 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
         if (errorCode == MLVBCommonDef.LiveRoomErrorCode.ERROR_IM_FORCE_OFFLINE) { // IM 被强制下线。
             TCUtils.showKickOut(TCAudienceActivity.this);
         } else {
-            showErrorAndQuit("视频流播放失败，Error:");
+            showErrorAndQuit("直播已经断开");
         }
     }
 

@@ -172,13 +172,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/preview"
-        android:background="@android:color/background_dark"
+        android:background="#00FFFFFF"
         android:gravity="center_horizontal"
         android:orientation="vertical">
 
         <com.example.qd.douyinwu.view.SectionProgressBar
             android:id="@+id/record_progressbar"
             android:layout_width="match_parent"
+            android:visibility="visible"
             android:layout_height="8dp" />
 
         <LinearLayout

@@ -4,6 +4,7 @@ public interface HttpConstant {
     String ROOT_URL = "http://slive.sdyilian.top/slapi/short";
     String ROOT_URL1 = "http://slive.sdyilian.top/slapi/alive";
     String ROOT_URL2 = "http://slive.sdyilian.top/slapi/goods";
+    String ROOT_URL3 = "http://slive.sdyilian.top/slapi/public";
     //获取短视频主页列表
     String GET_SHORTVIDEO_LIST = ROOT_URL + "/index";
     //短视频点赞
@@ -30,4 +31,12 @@ public interface HttpConstant {
     String GET_GOODS_LIST = ROOT_URL2+"/host_goods_list";
 
     String UPLOAD_SHORT_VIDEO = ROOT_URL+"/deal_with";
+
+    String UPLOAD = ROOT_URL3+"/upload";
+
+    String PLAYALIVE = ROOT_URL1+"/playalive";
+
+    String START_LIVE = ROOT_URL1+"/live_start";
+
+    String CLOSE_LIVE = ROOT_URL1+"/close_alive";
 }

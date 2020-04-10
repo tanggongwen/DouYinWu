@@ -21,6 +21,7 @@ public class TCConstants {
 
     public static final int USER_INFO_MAXLEN    = 20;
     public static final int TV_TITLE_MAX_LEN    = 30;
+    public static final int TV_NOTI_MAX_LEN    = 40;
     public static final int NICKNAME_MAX_LEN    = 20;
 
     //直播类型
@@ -38,12 +39,21 @@ public class TCConstants {
     public static final int CAMERA_PERMISSION_REQ_CODE    = 3;
 
     public static final String ROOM_TITLE       = "room_title";
+    public static final String ROOM="room";
+    public static final String ROOM_ID="roomid";
+    public static final String PUSHURL="pushurl";
     public static final String COVER_PIC        = "cover_pic";
+    public static final String GOODS_ID        = "goods_id";
+    public static final String GOODS_NAME        = "goods_name";
+    public static final String GOODS_PIC       = "goods_pic";
+    public static final String GOODS_PRICE      = "goods_price";
+    public static final String PEOPLE_NUM       = "people_num";
     public static final String GROUP_ID         = "group_id";
     public static final String PLAY_URL         = "play_url";
     public static final String PLAY_TYPE        = "play_type";
     public static final String PUSHER_AVATAR    = "pusher_avatar";
     public static final String PUSHER_ID        = "pusher_id";
+    public static final String KEYROOM_ID = "key_roomid";
     public static final String PUSHER_NAME        = "pusher_name";
     public static final String MEMBER_COUNT     = "member_count";
     public static final String HEART_COUNT      = "heart_count";

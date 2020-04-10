@@ -20,6 +20,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.qd.douyinwu.R;
+import com.example.qd.douyinwu.activity.UploadVideoActivity;
+import com.example.qd.douyinwu.adapter.GoodsListAdapter;
+import com.example.qd.douyinwu.been.ChooseGoodsBean;
+import com.example.qd.douyinwu.been.ClassicGoodsBean;
+import com.example.qd.douyinwu.been.GoodsBean;
+import com.example.qd.douyinwu.intef.ResultListener;
+import com.example.qd.douyinwu.utils.BaseOkGoUtils;
+import com.example.qd.douyinwu.utils.JsonUtils;
+import com.example.qd.douyinwu.utils.L;
 import com.example.qd.douyinwu.xiaozhibo.common.msg.TCSimpleUserInfo;
 import com.example.qd.douyinwu.xiaozhibo.common.report.TCELKReportMgr;
 import com.example.qd.douyinwu.xiaozhibo.common.utils.TCConstants;
@@ -37,9 +46,13 @@ import com.tencent.liteav.demo.beauty.BeautyParams;
 import com.tencent.rtmp.ui.TXCloudVideoView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
+import static com.example.qd.douyinwu.constant.HttpConstant.GET_GOODS_LIST;
 
 /**
  * Module:   TCBaseAnchorActivity
@@ -158,6 +171,8 @@ public class TCCameraAnchorActivity extends TCBaseAnchorActivity {
     private void showHeadIcon(ImageView view, String avatar) {
         TCUtils.showPicWithUrl(this, view, avatar, R.drawable.face);
     }
+
+
 
 
     @Override

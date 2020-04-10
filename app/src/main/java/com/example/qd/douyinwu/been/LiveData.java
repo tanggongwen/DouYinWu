@@ -12,6 +12,11 @@ public class LiveData {
     private String nick_name;//直播主播昵称
     private String level;//1主播2商家
     private String play_url;//直播链接
+    private String goods_id;
+    private String goods_name;
+    private String original_img1;
+    private String peoplenum;
+    private String market_price;
 
     public void setPlay_url(String play_url) {
         this.play_url = play_url;
@@ -99,5 +104,45 @@ public class LiveData {
 
     public String getId() {
         return id;
+    }
+
+    public String getGoods_id() {
+        return goods_id;
+    }
+
+    public void setGoods_id(String goods_id) {
+        this.goods_id = goods_id;
+    }
+
+    public String getGoods_name() {
+        return goods_name;
+    }
+
+    public void setGoods_name(String goods_name) {
+        this.goods_name = goods_name;
+    }
+
+    public String getOriginal_img1() {
+        return original_img1;
+    }
+
+    public void setOriginal_img1(String original_img1) {
+        this.original_img1 = original_img1;
+    }
+
+    public String getPeoplenum() {
+        return peoplenum;
+    }
+
+    public void setPeoplenum(String peoplenum) {
+        this.peoplenum = peoplenum;
+    }
+
+    public String getMarket_price() {
+        return market_price;
+    }
+
+    public void setMarket_price(String market_price) {
+        this.market_price = market_price;
     }
 }

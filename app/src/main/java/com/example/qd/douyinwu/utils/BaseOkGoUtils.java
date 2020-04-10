@@ -200,6 +200,72 @@ public class BaseOkGoUtils {
                                     listener.onErr(baseBeen.getCode()+"");
                                 }else{
                                     listener.onErr(baseBeen.getMsg());
+                                    Toast.makeText(context,baseBeen.getMsg(),Toast.LENGTH_SHORT).show();
+                                }
+//                                Toast.makeText(context,baseBeen.getMsg(),Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+//                            if ("0".equals(baseBeen.getError_code())){
+//                                listener.onSucceeded(baseBeen.getData());
+//                            }else if ("10001".equals(baseBeen.getError_code())){
+//                                //跳转登录页面
+//                                context.startActivity(new Intent(context, LoginActivity.class));
+//                            }else if ("1".equals(baseBeen.getError_code())){
+//                                listener.onFailed(baseBeen.getMsg());
+//                                Toast.makeText(context,baseBeen.getMsg(),Toast.LENGTH_SHORT).show();
+//                            }else {
+//                                Toast.makeText(context,baseBeen.getMsg(),Toast.LENGTH_SHORT).show();
+//                            }
+                        }catch (Exception e){
+
+                        }
+
+
+                        L.e("qpf","获取数据成功 -- " + response.body());
+                    }
+
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        L.e("qpf","获取数据失败 -- " + response.getException());
+                        if (response != null) {
+                            listener.onErr(response.getException().toString());
+                        }
+                    }});
+    }
+
+    public static void postOkGoWithFile(final Context context, Map<String, Object> map, String url,String filePath, final ResultListener listener) {
+        String ppp = new Gson().toJson(map);
+        L.e("qpf","请求地址 -- " + url + "参数 -- " + ppp);
+        params = mapParse(map);
+//        HttpHeaders header = new HttpHeaders();
+//        header.put("Cookie",";"+KVUtils.query(SPConstant.COOKIE));
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.cookieJar(new CookieJarImpl(new SPCookieStore(context)));
+        File file = new File(filePath);
+        OkGo.getInstance().setOkHttpClient(builder.build());
+        OkGo.<String>post(url)
+                .params(params)
+                .params("file",file)
+//                .headers(header)
+                .execute(new StringCallback() {
+                    @Override
+                    public void onSuccess(Response<String> response) {
+
+                        L.e("qpf","返回结果 -- " + response.body());
+                        try{
+                            MyBaseBeen baseBeen = new Gson().fromJson(response.body(),MyBaseBeen.class);
+                            if(baseBeen.getCode() == 200){
+                                if(baseBeen.getData() != null){
+                                    listener.onSucceeded(baseBeen.getData());
+                                }else {
+                                    listener.onSucceeded(response.body());
+                                }
+                            }else{
+                                if(baseBeen.getCode() == 10001){
+                                    listener.onErr(baseBeen.getCode()+"");
+                                }else{
+                                    listener.onErr(baseBeen.getMsg());
 //                                    Toast.makeText(context,baseBeen.getMsg(),Toast.LENGTH_SHORT).show();
                                 }
 //                                Toast.makeText(context,baseBeen.getMsg(),Toast.LENGTH_SHORT).show();
@@ -233,6 +299,7 @@ public class BaseOkGoUtils {
                         }
                     }});
     }
+
 
     public static void postOkGo(final Activity context,boolean isShowLoading, Map<String, Object> map, String url, final ResultListener listener) {
 

@@ -12,6 +12,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 
+import com.example.qd.douyinwu.utils.PersonInfoManager;
 import com.example.qd.douyinwu.xiaozhibo.liteav.demo.lvb.liveroom.roomutil.commondef.AnchorInfo;
 import com.example.qd.douyinwu.xiaozhibo.liteav.demo.lvb.liveroom.roomutil.commondef.AudienceInfo;
 import com.example.qd.douyinwu.xiaozhibo.liteav.demo.lvb.liveroom.roomutil.commondef.LoginInfo;
@@ -226,6 +227,8 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
             }
         });
     }
+
+
 
     /**
      * 退出登录
@@ -462,6 +465,90 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
         });
     }
 
+
+    @Override
+    public void createRoom(final String roomID, String pushUrl, final String roomInfo, final IMLVBLiveRoomListener.CreateRoomCallback callback) {
+        TXCLog.i(TAG, "API -> createRoom:" + roomID + ":" + roomInfo);
+        mSelfRoleType = LIVEROOM_ROLE_PUSHER;
+        //1. 在应用层调用startLocalPreview，启动本地预览
+                mCurrRoomID = roomID;
+        //2. 请求CGI:get_push_url，异步获取到推流地址pushUrl
+                    mSelfPushUrl = pushUrl;
+                    mSelfAccelerateURL = pushUrl;
+
+                    //3.开始推流
+                    startPushStream(mSelfPushUrl, TXLiveConstants.VIDEO_QUALITY_HIGH_DEFINITION, new StandardCallback() {
+                        @Override
+                        public void onError(int errCode, String errInfo) {
+                            callbackOnThread(callback, "onError", errCode, errInfo);
+                        }
+
+                        @Override
+                        public void onSuccess() {
+                            //推流过程中，可能会重复收到PUSH_EVT_PUSH_BEGIN事件，onSuccess可能会被回调多次，如果已经创建的房间，直接返回
+                            if (mCurrRoomID != null && mCurrRoomID.length() > 0) {
+                                return;
+                            }
+
+                            if (mTXLivePusher != null) {
+                                TXLivePushConfig config = mTXLivePusher.getConfig();
+                                config.setVideoEncodeGop(2);
+                                mTXLivePusher.setConfig(config);
+                            }
+
+                            mBackground = false;
+                            //4.推流成功，请求CGI:create_room，获取roomID、roomSig
+                            doCreateRoom(roomID, roomInfo, new StandardCallback() {
+                                @Override
+                                public void onError(int errCode, String errInfo) {
+                                    callbackOnThread(callback, "onError", errCode, errInfo);
+                                }
+
+                                @Override
+                                public void onSuccess() {
+
+                                    //5.请求CGI：add_pusher，加入房间
+                                    addAnchor(mCurrRoomID, mSelfPushUrl, new StandardCallback() {
+                                        @Override
+                                        public void onError(int errCode, String errInfo) {
+                                            callbackOnThread(callback, "onError", errCode, errInfo);
+                                        }
+
+                                        @Override
+                                        public void onSuccess() {
+                                            //6.创建IM群
+                                            createIMGroup(mCurrRoomID, mCurrRoomID, new StandardCallback() {
+                                                @Override
+                                                public void onError(int errCode, String errInfo) {
+                                                    if (errCode == 10025) {
+                                                        //群组 ID 已被使用，并且操作者为群主，可以直接使用
+                                                        Log.w(TAG, "[IM] 群组 " + mCurrRoomID + " 已被使用，并且操作者为群主，可以直接使用");
+                                                        mJoinPusher = true;
+                                                        mHeartBeatThread.startHeartbeat(); //启动心跳
+                                                        mStreamMixturer.setMainVideoStream(mSelfPushUrl);
+                                                        callbackOnThread(callback, "onSuccess", mCurrRoomID);
+                                                    } else {
+                                                        callbackOnThread(callback, "onError", errCode, errInfo);
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onSuccess() {
+                                                    mJoinPusher = true;
+                                                    mHeartBeatThread.startHeartbeat(); //启动心跳
+                                                    mStreamMixturer.setMainVideoStream(mSelfPushUrl);
+                                                    callbackOnThread(callback, "onSuccess", mCurrRoomID);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+    }
+
     /**
      * 进入房间（观众调用）
      *
@@ -482,48 +569,66 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
         }
         mSelfRoleType = LIVEROOM_ROLE_PLAYER;
         mCurrRoomID = roomID;
-
-        //1.IM进群
-        jionIMGroup(roomID, new StandardCallback() {
+        Handler handler = new Handler(mAppContext.getMainLooper());
+        handler.post(new Runnable() {
             @Override
-            public void onError(int errCode, String errInfo) {
-                callbackOnThread(callback, "onError", errCode, errInfo);
+            public void run() {
+                if (view != null) {
+                    view.setVisibility(View.VISIBLE);
+                }
+                String mixedPlayUrl = getMixedPlayUrlByRoomID(roomID);
+                if (mixedPlayUrl != null && mixedPlayUrl.length() > 0) {
+                    int playType = getPlayType(mixedPlayUrl);
+                    mTXLivePlayer.setPlayerView(view);
+                    mTXLivePlayer.startPlay(mixedPlayUrl, playType);
+
+                    callbackOnThread(callback, "onSuccess");
+                } else {
+                    callbackOnThread(callback, "onError", MLVBCommonDef.LiveRoomErrorCode.ERROR_PLAY, "[LiveRoom] 未找到CDN播放地址");
+                }
             }
+        });
+        //1.IM进群
+//        jionIMGroup(roomID, new StandardCallback() {
+//            @Override
+//            public void onError(int errCode, String errInfo) {
+//                callbackOnThread(callback, "onError", errCode, errInfo);
+//            }
+//
+//            @Override
+//            public void onSuccess() {
+//                //2.在主线程播放CDN流
+//
+//            }
+//        });
+    }
 
+
+    @Override
+    public void enterRoom(final String roomID, final String mixedPlayUrl, final TXCloudVideoView view, final IMLVBLiveRoomListener.EnterRoomCallback callback) {
+        TXCLog.i(TAG, "API -> enterRoom:" + roomID);
+        if (roomID == null || roomID.length() == 0) {
+            callbackOnThread(callback, "onError", MLVBCommonDef.LiveRoomErrorCode.ERROR_PARAMETERS_INVALID, "[LiveRoom] 进房失败[房间号为空]");
+            return;
+        }
+        mSelfRoleType = LIVEROOM_ROLE_PLAYER;
+        mCurrRoomID = roomID;
+        Handler handler = new Handler(mAppContext.getMainLooper());
+        handler.post(new Runnable() {
             @Override
-            public void onSuccess() {
-                //2.在主线程播放CDN流
-                Handler handler = new Handler(mAppContext.getMainLooper());
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (view != null) {
-                            view.setVisibility(View.VISIBLE);
-                        }
-                        String mixedPlayUrl = getMixedPlayUrlByRoomID(roomID);
-                        if (mixedPlayUrl != null && mixedPlayUrl.length() > 0) {
-                            int playType = getPlayType(mixedPlayUrl);
-                            mTXLivePlayer.setPlayerView(view);
-                            mTXLivePlayer.startPlay(mixedPlayUrl, playType);
+            public void run() {
+                if (view != null) {
+                    view.setVisibility(View.VISIBLE);
+                }
+                if (mixedPlayUrl != null && mixedPlayUrl.length() > 0) {
+                    int playType = getPlayType(mixedPlayUrl);
+                    mTXLivePlayer.setPlayerView(view);
+                    mTXLivePlayer.startPlay(mixedPlayUrl, playType);
 
-                            if (mHttpRequest != null) {
-                                String userInfo = "";
-                                try {
-                                    userInfo = new JSONObject()
-                                            .put("userName", mSelfAccountInfo.userName)
-                                            .put("userAvatar", mSelfAccountInfo.userAvatar)
-                                            .toString();
-                                } catch (JSONException e) {
-                                    userInfo = "";
-                                }
-                                mHttpRequest.addAudience(roomID, mSelfAccountInfo.userID, userInfo, null);
-                            }
-                            callbackOnThread(callback, "onSuccess");
-                        } else {
-                            callbackOnThread(callback, "onError", MLVBCommonDef.LiveRoomErrorCode.ERROR_PLAY, "[LiveRoom] 未找到CDN播放地址");
-                        }
-                    }
-                });
+                    callbackOnThread(callback, "onSuccess");
+                } else {
+                    callbackOnThread(callback, "onError", MLVBCommonDef.LiveRoomErrorCode.ERROR_PLAY, "[LiveRoom] 未找到CDN播放地址");
+                }
             }
         });
     }
@@ -1762,8 +1867,8 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
         CommonJson<CustomMessage> customMessage = new CommonJson<>();
         customMessage.cmd = "CustomCmdMsg";
         customMessage.data = new CustomMessage();
-        customMessage.data.userName = mSelfAccountInfo.userName;
-        customMessage.data.userAvatar = mSelfAccountInfo.userAvatar;
+        customMessage.data.userName = "开发人员";
+        customMessage.data.userAvatar = "开发人员Avatar";
         customMessage.data.cmd = cmd;
         customMessage.data.msg = message ;
         final String content = new Gson().toJson(customMessage, new TypeToken<CommonJson<CustomMessage>>(){}.getType());
@@ -1981,11 +2086,13 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
 
 
     protected void startPushStream(final String url, final int videoQuality, final StandardCallback callback){
+        Log.d("tanggongwen","startPushStream");
         //在主线程开启推流
         Handler handler = new Handler(mAppContext.getMainLooper());
         handler.post(new Runnable() {
             @Override
             public void run() {
+
                 if (mTXLivePusher != null && mTXLivePushListener != null) {
                     mTXLivePushListener.setCallback(callback);
                     mTXLivePusher.setVideoQuality(videoQuality, false, false);
@@ -1994,7 +2101,10 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
                         String msg = "[LiveRoom] 推流失败[license 校验失败]";
                         TXCLog.e(TAG, msg);
                         if (callback != null) callback.onError(MLVBCommonDef.LiveRoomErrorCode.ERROR_LICENSE_INVALID, msg);
+                        return;
                     }
+                    Log.d("tanggongwen","ret:"+ret);
+                    callback.onSuccess();
                 } else {
                     String msg = "[LiveRoom] 推流失败[TXLivePusher未初始化，请确保已经调用startLocalPreview]";
                     TXCLog.e(TAG, msg);
@@ -2005,7 +2115,7 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
     }
 
     protected void doCreateRoom(final String roomID, String roomInfo, final StandardCallback callback){
-        mHttpRequest.createRoom(roomID, mSelfAccountInfo.userID, roomInfo,
+        mHttpRequest.createRoom(roomID, PersonInfoManager.INSTANCE.getUserId(), roomInfo,
                 new HttpRequests.OnResponseCallback<HttpResponse.CreateRoom>() {
                     @Override
                     public void onResponse(int retcode, String retmsg, HttpResponse.CreateRoom data) {
@@ -2086,7 +2196,9 @@ public class MLVBLiveRoomImpl extends MLVBLiveRoom implements HttpRequests.Heart
         CommonJson<AnchorInfo> msg = new CommonJson<>();
         msg.cmd = "notifyPusherChange";
         msg.data = new AnchorInfo();
-        msg.data.userID = mSelfAccountInfo.userID;
+        if (null!=mSelfAccountInfo){
+            msg.data.userID = mSelfAccountInfo.userID;
+        }
         String content = new Gson().toJson(msg, new TypeToken<CommonJson<AnchorInfo>>(){}.getType());
         IMMessageMgr imMessageMgr = mIMMessageMgr;
         if (imMessageMgr != null) {

@@ -19,10 +19,11 @@
     <application
         android:name=".ShortVideoApplication"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launch"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/ic_launch"
         android:supportsRtl="true"
+        android:networkSecurityConfig="@xml/net_public"
         android:theme="@style/AppTheme">
         <activity android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
@@ -37,7 +38,7 @@
         <activity
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:windowSoftInputMode="adjustPan"
-            android:name=".activity.ActVideoPlay"
+            android:name=".fragment.ActVideoPlayFragment"
             android:screenOrientation="portrait" />
         <activity
             android:name=".activity.ActZhiBoList"
@@ -69,6 +70,19 @@
             android:screenOrientation="portrait" />
         <activity android:name=".activity.UploadVideoActivity"
             android:screenOrientation="portrait"/>
+        <activity android:name=".activity.WebActivity"
+            android:screenOrientation="portrait"/>
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="com.example.qd.douyinwu"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths_public">
+            </meta-data>
+        </provider>
     </application>
 
 </manifest>

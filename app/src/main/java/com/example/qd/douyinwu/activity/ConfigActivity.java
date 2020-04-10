@@ -20,7 +20,7 @@ public class ConfigActivity extends AppCompatActivity {
     private Spinner mEncodingBitrateLevelSpinner;
     private Spinner mAudioChannelNumSpinner;
 
-    public static int PREVIEW_SIZE_RATIO_POS = 0;
+        public static int PREVIEW_SIZE_RATIO_POS = 1;
     public static int PREVIEW_SIZE_LEVEL_POS = 3;
     public static int ENCODING_MODE_LEVEL_POS = 0;
     public static int ENCODING_SIZE_LEVEL_POS = 7;

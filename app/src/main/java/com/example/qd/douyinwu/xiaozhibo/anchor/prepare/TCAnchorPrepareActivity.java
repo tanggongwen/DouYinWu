@@ -1,6 +1,7 @@
 package com.example.qd.douyinwu.xiaozhibo.anchor.prepare;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
@@ -14,6 +15,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Display;
@@ -21,6 +24,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -28,7 +32,23 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
+import com.donkingliang.labels.LabelsView;
 import com.example.qd.douyinwu.R;
+import com.example.qd.douyinwu.activity.ActZhiBoList;
+import com.example.qd.douyinwu.activity.UploadVideoActivity;
+import com.example.qd.douyinwu.adapter.GoodsListAdapter;
+import com.example.qd.douyinwu.been.ChooseGoodsBean;
+import com.example.qd.douyinwu.been.ClassicGoodsBean;
+import com.example.qd.douyinwu.been.GoodsBean;
+import com.example.qd.douyinwu.been.LivePushBean;
+import com.example.qd.douyinwu.been.LiveTypeBeen;
+import com.example.qd.douyinwu.intef.ResultListener;
+import com.example.qd.douyinwu.utils.BaseOkGoUtils;
+import com.example.qd.douyinwu.utils.JsonUtils;
+import com.example.qd.douyinwu.utils.L;
+import com.example.qd.douyinwu.utils.PersonInfoManager;
+import com.example.qd.douyinwu.utils.ToastUtils;
+import com.example.qd.douyinwu.utils.Utils;
 import com.example.qd.douyinwu.xiaozhibo.anchor.TCCameraAnchorActivity;
 import com.example.qd.douyinwu.xiaozhibo.audience.TCCustomSwitch;
 import com.example.qd.douyinwu.xiaozhibo.common.net.TCHTTPMgr;
@@ -36,13 +56,25 @@ import com.example.qd.douyinwu.xiaozhibo.common.upload.TCUploadHelper;
 import com.example.qd.douyinwu.xiaozhibo.common.utils.TCConstants;
 import com.example.qd.douyinwu.xiaozhibo.common.utils.TCUtils;
 import com.example.qd.douyinwu.xiaozhibo.login.TCUserMgr;
+import com.qiniu.android.utils.StringUtils;
+import com.zhihu.matisse.Matisse;
+import com.zhihu.matisse.MimeType;
+import com.zhihu.matisse.engine.impl.GlideEngine;
+import com.zhihu.matisse.internal.entity.CaptureStrategy;
 
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static com.example.qd.douyinwu.constant.HttpConstant.GET_GOODS_LIST;
+import static com.example.qd.douyinwu.constant.HttpConstant.GET_ZHIBO_TYPE;
+import static com.example.qd.douyinwu.constant.HttpConstant.START_LIVE;
+import static com.example.qd.douyinwu.constant.HttpConstant.UPLOAD;
 
 /**
  * Module:   TCAnchorPrepareActivity
@@ -61,25 +93,41 @@ import java.util.List;
  */
 public class TCAnchorPrepareActivity extends Activity implements View.OnClickListener, TCUploadHelper.OnUploadListener, TCLocationHelper.OnLocationListener, RadioGroup.OnCheckedChangeListener {
     private static final String TAG = TCAnchorPrepareActivity.class.getSimpleName();
-    private static final int CAPTURE_IMAGE_CAMERA = 100;    // 封面：发起拍照
-    private static final int IMAGE_STORE = 200;             // 封面：选择图库
-    private static final int CROP_CHOOSE = 10;              // 封面：裁剪
+//    private static final int CAPTURE_IMAGE_CAMERA = 100;    // 封面：发起拍照
+//    private static final int IMAGE_STORE = 200;             // 封面：选择图库
+//    private static final int CROP_CHOOSE = 10;              // 封面：裁剪
+    private static final int REQUEST_CODE_CHOOSE =2001 ;
 
     private TextView mTvReturn;      // 返回
     private TextView mTvPublish;     // 开始直播
     private TextView mTvPicTip;      // 封面提示
     private TextView mTvLocation;    // 显示定位的地址
-    private TextView mTvTitle;       // 直播标题
+    private EditText mTvTitle,mNoti;       // 直播标题
     private Dialog mPicChsDialog;  // 图片选择弹窗
     private ImageView mIvCover;       // 图片封面
     private TCCustomSwitch mSwitchLocate;  // 发起定位的按钮
     private RadioGroup mRGRecordType;  // 推流类型：摄像头推流或屏幕录制推流
     private int                             mRecordType = TCConstants.RECORD_TYPE_CAMERA;   // 默认摄像头推流
 
-    private Uri mSourceFileUri, mCropFileUri;      // 封面图源文件的Uri，裁剪过后的Uri
     private boolean                          mUploadingCover = false;           // 当前是否正在上传图片
     private boolean                          mPermission = false;               // 是否已经授权
     private TCUploadHelper                   mUploadHelper;                     // COS 存储封面图的工具类
+    private LabelsView liveType;
+    private List<LiveTypeBeen> mData;
+    private String currentLiveTypeId= "";
+    private String goodsId="";
+    private String curretnCoverPath="";
+    private String localCoverPath="";
+    private TextView tvLoading;
+
+    private List<GoodsBean> goodsBeanList = new ArrayList<>();
+    private List<ChooseGoodsBean> chooseGoodsBeans = new ArrayList<>();
+
+    private GoodsListAdapter goodsListAdapter;
+
+    private RecyclerView recyclerView;
+
+    private String seletedGoodsId = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,23 +135,45 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
         setContentView(R.layout.activity_anchor_prepare);
         mUploadHelper = new TCUploadHelper(this, this);
 
-        mTvTitle = (TextView) findViewById(R.id.anchor_tv_title);
+        mTvTitle = findViewById(R.id.anchor_tv_title);
+        mNoti = findViewById(R.id.anchor_tv_noti);
         mTvReturn = (TextView) findViewById(R.id.anchor_btn_cancel);
         mTvPicTip = (TextView) findViewById(R.id.anchor_pic_tips);
         mTvPublish = (TextView) findViewById(R.id.anchor_btn_publish);
         mIvCover = (ImageView) findViewById(R.id.anchor_btn_cover);
         mTvLocation = (TextView) findViewById(R.id.anchor_tv_location);
         mSwitchLocate = (TCCustomSwitch) findViewById(R.id.anchor_btn_location);
+        tvLoading = findViewById(R.id.loading);
         mRGRecordType = (RadioGroup) findViewById(R.id.anchor_rg_record_type);
+        liveType = findViewById(R.id.liveTypes);
+        liveType.setOnLabelSelectChangeListener(onLabelSelectChangeListener);
         mIvCover.setOnClickListener(this);
         mTvReturn.setOnClickListener(this);
         mTvPublish.setOnClickListener(this);
         mSwitchLocate.setOnClickListener(this);
         mRGRecordType.setOnCheckedChangeListener(this);
-
+        recyclerView = findViewById(R.id.goodList);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false));
+        goodsListAdapter = new GoodsListAdapter(TCAnchorPrepareActivity.this, chooseGoodsBeans, new GoodsListAdapter.ItemClick() {
+            @Override
+            public void onClickItem(ChooseGoodsBean chooseGoodsBean) {
+                for (int i=0;i<chooseGoodsBeans.size();i++){
+                    if (chooseGoodsBean.getGoods_id() .equals(chooseGoodsBeans.get(i).getGoods_id())){
+                        chooseGoodsBeans.get(i).setSeleted(true);
+                        seletedGoodsId = chooseGoodsBean.getGoods_id();
+                    }else {
+                        chooseGoodsBeans.get(i).setSeleted(false);
+                    }
+                }
+                goodsListAdapter.notifyDataSetChanged();
+            }
+        });
+        recyclerView.setAdapter(goodsListAdapter);
         mPermission = checkPublishPermission();
-        initPhotoDialog();
+//        initPhotoDialog();
+        getGoodList();
         initCover();
+        getZhiboListType();
     }
 
     /**
@@ -129,47 +199,68 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
     }
 
 
-    /**
-     * 图片选择对话框
-     */
-    private void initPhotoDialog() {
-        mPicChsDialog = new Dialog(this, R.style.floag_dialog);
-        mPicChsDialog.setContentView(R.layout.dialog_pic_choose);
-
-        WindowManager windowManager = getWindowManager();
-        Display display = windowManager.getDefaultDisplay();
-        Window dlgwin = mPicChsDialog.getWindow();
-        WindowManager.LayoutParams lp = dlgwin.getAttributes();
-        dlgwin.setGravity(Gravity.BOTTOM);
-        lp.width = (int) (display.getWidth()); //设置宽度
-
-        mPicChsDialog.getWindow().setAttributes(lp);
-
-        TextView camera = (TextView) mPicChsDialog.findViewById(R.id.chos_camera);
-        TextView picLib = (TextView) mPicChsDialog.findViewById(R.id.pic_lib);
-        TextView cancel = (TextView) mPicChsDialog.findViewById(R.id.anchor_btn_cancel);
-        camera.setOnClickListener(new View.OnClickListener() {
+    private void getZhiboListType(){
+        Map<String, Object> map = new HashMap<>();
+        BaseOkGoUtils.postOkGo(TCAnchorPrepareActivity.this,map, GET_ZHIBO_TYPE, new ResultListener() {
             @Override
-            public void onClick(View view) {
-                getPicFrom(CAPTURE_IMAGE_CAMERA);
-                mPicChsDialog.dismiss();
-            }
-        });
-
-        picLib.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getPicFrom(IMAGE_STORE);
-                mPicChsDialog.dismiss();
-            }
-        });
-        cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mPicChsDialog.dismiss();
+            public void onSucceeded(Object object) {
+                try {
+                    L.e("qpf","直播分类获取成功 -- " + object.toString());
+                    mData = JsonUtils.objBeanToList(object, LiveTypeBeen.class);
+                    liveType.setLabels(mData, new LabelsView.LabelTextProvider<LiveTypeBeen>() {
+                        @Override
+                        public CharSequence getLabelText(TextView label, int position, LiveTypeBeen data) {
+                            return data.getT_name();
+                        }
+                    });
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         });
     }
+
+    public void getGoodList(){
+        Map<String, Object> map = new HashMap<>();
+        map.put("user_id", PersonInfoManager.INSTANCE.getUserId());
+        map.put("store_id",PersonInfoManager.INSTANCE.getStoreId());
+        BaseOkGoUtils.postOkGo(TCAnchorPrepareActivity.this,map, GET_GOODS_LIST, new ResultListener() {
+            @Override
+            public void onSucceeded(Object object) {
+                try {
+                    L.e("qpf","直播分类获取成功 -- " + object.toString());
+                    ClassicGoodsBean goodsBean = JsonUtils.parseJsonWithGson(object,ClassicGoodsBean.class);
+                    goodsBeanList = goodsBean.getList();
+                    for (GoodsBean bean:goodsBeanList){
+                        ChooseGoodsBean chooseGoodsBean = new ChooseGoodsBean();
+                        chooseGoodsBean.setGoods_id(bean.getGoods_id());
+                        chooseGoodsBean.setSeleted(false);
+                        chooseGoodsBean.setGoods_name(bean.getGoods_name());
+                        chooseGoodsBean.setOriginal_img1(bean.getOriginal_img1());
+                        chooseGoodsBeans.add(chooseGoodsBean);
+                    }
+                    goodsListAdapter.setNewData(chooseGoodsBeans);
+
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+
+
+    private LabelsView.OnLabelSelectChangeListener onLabelSelectChangeListener = new LabelsView.OnLabelSelectChangeListener() {
+        @Override
+        public void onLabelSelectChange(TextView label, Object data, boolean isSelect, int position) {
+            if (isSelect){
+                currentLiveTypeId = mData.get(position).getT_id();
+            }
+        }
+    };
+
+
+
 
 
 
@@ -182,19 +273,24 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
             case R.id.anchor_btn_publish:
                 //trim避免空格字符串
                 if (TextUtils.isEmpty(mTvTitle.getText().toString().trim())) {
-                    Toast.makeText(getApplicationContext(), "请输入非空直播标题", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "请输入直播标题", Toast.LENGTH_SHORT).show();
                 } else if (TCUtils.getCharacterNum(mTvTitle.getText().toString()) > TCConstants.TV_TITLE_MAX_LEN) {
                     Toast.makeText(getApplicationContext(), "直播标题过长 ,最大长度为" + TCConstants.TV_TITLE_MAX_LEN / 2, Toast.LENGTH_SHORT).show();
-                } else if (mUploadingCover) {
-                    Toast.makeText(getApplicationContext(), getString(R.string.publish_wait_uploading), Toast.LENGTH_SHORT).show();
-                } else if (!TCUtils.isNetworkAvailable(this)) {
+                }else if (TextUtils.isEmpty(mNoti.getText().toString().trim())) {
+                Toast.makeText(getApplicationContext(), "请输入直播公告", Toast.LENGTH_SHORT).show();
+            } else if (TCUtils.getCharacterNum(mNoti.getText().toString()) > TCConstants.TV_TITLE_MAX_LEN) {
+                Toast.makeText(getApplicationContext(), "直播标题过长 ,最大长度为" + TCConstants.TV_NOTI_MAX_LEN , Toast.LENGTH_SHORT).show();
+            }
+            else if (!TCUtils.isNetworkAvailable(this)) {
                     Toast.makeText(getApplicationContext(), "当前网络环境不能发布直播", Toast.LENGTH_SHORT).show();
                 } else {
-                    startPublish();
+                tvLoading.setVisibility(View.VISIBLE);
+                    uploadCoverFile(localCoverPath);
+//                    startPublish();
                 }
                 break;
             case R.id.anchor_btn_cover:
-                mPicChsDialog.show();
+                chooseImage(true);
                 break;
             case R.id.anchor_btn_location:
                 if (mSwitchLocate.getChecked()) {
@@ -219,7 +315,7 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
      * 发起推流
      *
      */
-    private void startPublish() {
+    private void startPublish(String roomId,String room,String pushUrl) {
         Intent intent = null;
         if (mRecordType == TCConstants.RECORD_TYPE_SCREEN) {
             //录屏
@@ -229,12 +325,16 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
         }
 
         if (intent != null) {
+            tvLoading.setVisibility(View.GONE);
             intent.putExtra(TCConstants.ROOM_TITLE,
                     TextUtils.isEmpty(mTvTitle.getText().toString()) ? TCUserMgr.getInstance().getNickname() : mTvTitle.getText().toString());
-            intent.putExtra(TCConstants.USER_ID, TCUserMgr.getInstance().getUserId());
-            intent.putExtra(TCConstants.USER_NICK, TCUserMgr.getInstance().getNickname());
+            intent.putExtra(TCConstants.USER_ID, PersonInfoManager.INSTANCE.getUserId());
+            intent.putExtra(TCConstants.USER_NICK, PersonInfoManager.INSTANCE.getUserBean().getNick_name());
             intent.putExtra(TCConstants.USER_HEADPIC, TCUserMgr.getInstance().getAvatar());
-            intent.putExtra(TCConstants.COVER_PIC, TCUserMgr.getInstance().getCoverPic());
+            intent.putExtra(TCConstants.COVER_PIC, curretnCoverPath);
+            intent.putExtra(TCConstants.ROOM_ID,roomId);
+            intent.putExtra(TCConstants.ROOM,room);
+            intent.putExtra(TCConstants.PUSHURL,pushUrl);
             intent.putExtra(TCConstants.USER_LOC,
                     mTvLocation.getText().toString().equals(getString(R.string.text_live_lbs_fail)) ||
                             mTvLocation.getText().toString().equals(getString(R.string.text_live_location)) ?
@@ -242,9 +342,56 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
             startActivity(intent);
             finish();
         }
+        tvLoading.setVisibility(View.GONE);
     }
 
 
+
+    public void startLive(){
+        Map<String, Object> map = new HashMap<>();
+        map.put("user_id",PersonInfoManager.INSTANCE.getUserId());
+        map.put("cover",curretnCoverPath);
+        map.put("title",mTvTitle.getText().toString());
+        map.put("notice",mNoti.getText().toString());
+        map.put("t_id",currentLiveTypeId);
+        map.put("goods_id",goodsId);
+            BaseOkGoUtils.postOkGo(TCAnchorPrepareActivity.this,map, START_LIVE, new ResultListener() {
+                @Override
+                public void onSucceeded(Object object) {
+                    try {
+                        LivePushBean livePushBean = JsonUtils.parseJsonWithGson(object,LivePushBean.class);
+                        startPublish(livePushBean.getId(),livePushBean.getRoom(),livePushBean.getPush_url());
+
+                    }catch (Exception e){
+
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onErr(String e) {
+                    tvLoading.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onFailed(String content) {
+                    tvLoading.setVisibility(View.GONE);
+                }
+            });
+    }
+
+
+    @SuppressLint("CheckResult")
+    private void chooseImage(final boolean needTakePhoto){
+        Matisse.from(TCAnchorPrepareActivity.this)
+                .choose(MimeType.ofImage())//图片类型
+                .countable(true)//true:选中后显示数字;false:选中后显示对号
+                .maxSelectable(1)//可选的最大数
+                .capture(needTakePhoto)//选择照片时，是否显示拍照
+                .captureStrategy(new CaptureStrategy(true, "com.example.qd.douyinwu"))//参数1 true表示拍照存储在共有目录，false表示存储在私有目录；参数2与 AndroidManifest中authorities值相同，用于适配7.0系统 必须设置
+                .imageEngine(new GlideEngine())//图片加载引擎
+                .forResult(REQUEST_CODE_CHOOSE);//
+    }
 
 
     /**
@@ -321,22 +468,32 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
-                case CAPTURE_IMAGE_CAMERA:
-                    cropPhoto(mSourceFileUri);
-                    break;
-                case IMAGE_STORE:
-                    String path = TCUtils.getPath(this, data.getData());
-                    if (null != path) {
-                        Log.d(TAG, "cropPhoto->path:" + path);
-                        File file = new File(path);
-                        cropPhoto(Uri.fromFile(file));
-                    }
-                    break;
-                case CROP_CHOOSE:
+//                case CAPTURE_IMAGE_CAMERA:
+//                    cropPhoto(mSourceFileUri);
+//                    break;
+//                case IMAGE_STORE:
+//                    String path = TCUtils.getPath(this, data.getData());
+//                    if (null != path) {
+//                        Log.d(TAG, "cropPhoto->path:" + path);
+//                        File file = new File(path);
+//                        cropPhoto(Uri.fromFile(file));
+//                    }
+//                    break;
+//                case CROP_CHOOSE:
+//                    mUploadingCover = true;
+//                    mTvPicTip.setVisibility(View.GONE);
+//                    // 上传到 COS
+//                    mUploadHelper.uploadPic(mCropFileUri.getPath());
+//                    break;
+                case REQUEST_CODE_CHOOSE:
                     mUploadingCover = true;
                     mTvPicTip.setVisibility(View.GONE);
-                    // 上传到 COS
-                    mUploadHelper.uploadPic(mCropFileUri.getPath());
+                    List<Uri> result = Matisse.obtainResult(data);
+                    if (result.size()>0){
+                        // 上传到 COS
+                        localCoverPath = Utils.getRealPathFromURI(getApplicationContext(),result.get(0));
+                        Glide.with(TCAnchorPrepareActivity.this).load(result.get(0)).into(mIvCover);
+                    }
                     break;
 
             }
@@ -344,131 +501,34 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
 
     }
 
-    /**
-     * COS 存储上传封面图回调的结果
-     *
-     * @param code
-     * @param url
-     */
-    @Override
-    public void onUploadResult(int code, String url) {
-        if (0 == code) {
-            TCUserMgr.getInstance().setCoverPic(url, null);
-            RequestManager req = Glide.with(this);
-            req.load(url).into(mIvCover);
-            Toast.makeText(this, "上传封面成功", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "上传封面失败，错误码 " + code, Toast.LENGTH_SHORT).show();
-        }
-        mUploadingCover = false;
-    }
-
-
-    /**
-     * 裁剪图片
-     *
-     * @param uri
-     */
-    public void cropPhoto(Uri uri) {
-        mCropFileUri = createCoverUri("_crop");
-        Intent intent = new Intent("com.android.camera.action.CROP");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            File file = new File(uri.getPath());
-            uri = FileProvider.getUriForFile(this, "com.tencent.qcloud.xiaozhibo.fileprovider", file);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        }
-        intent.setDataAndType(uri, "image/*");
-        intent.putExtra("crop", "true");
-        intent.putExtra("aspectX", 750);
-        intent.putExtra("aspectY", 550);
-        intent.putExtra("outputX", 750);
-        intent.putExtra("outputY", 550);
-        intent.putExtra("scale", true);
-        intent.putExtra("return-data", false);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, mCropFileUri);
-        intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
-        startActivityForResult(intent, CROP_CHOOSE);
-    }
-
-    /**
-     * 创建封面图地址
-     *
-     * @param type
-     * @return
-     */
-    private Uri createCoverUri(String type) {
-        String filename = TCUserMgr.getInstance().getUserId() + type + ".jpg";
-
-        File sdcardDir = getExternalFilesDir(null);
-        if (sdcardDir == null) {
-            Log.e(TAG, "createCoverUri sdcardDir is null");
-            return null;
-        }
-        String path = sdcardDir + "/xiaozhibo";
-
-        File outputImage = new File(path, filename);
-        if (ContextCompat.checkSelfPermission(TCAnchorPrepareActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(TCAnchorPrepareActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, TCConstants.WRITE_PERMISSION_REQ_CODE);
-            return null;
-        }
-        try {
-            File pathFile = new File(path);
-            if (!pathFile.exists()) {
-                pathFile.mkdirs();
-            }
-            if (outputImage.exists()) {
-                outputImage.delete();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "生成封面失败", Toast.LENGTH_SHORT).show();
-        }
-        return Uri.fromFile(outputImage);
-    }
-
-    /**
-     * 获取图片资源
-     *
-     * @param type 类型（本地IMAGE_STORE/拍照CAPTURE_IMAGE_CAMERA）
-     */
-    private void getPicFrom(int type) {
-        if (!mPermission) {
-            Toast.makeText(this, getString(R.string.tip_no_permission), Toast.LENGTH_SHORT).show();
+    private void uploadCoverFile(String filePath){
+        if (StringUtils.isNullOrEmpty(filePath)) {
             return;
         }
-
-        switch (type) {
-            case CAPTURE_IMAGE_CAMERA:
-                mSourceFileUri = createCoverUri("");
-                if(ContextCompat.checkSelfPermission( TCAnchorPrepareActivity.this, Manifest.permission.CAMERA)!= PackageManager.PERMISSION_GRANTED)
-                {
-                    ActivityCompat.requestPermissions(TCAnchorPrepareActivity.this,
-                            new String[]{Manifest.permission.CAMERA},
-                            TCConstants.CAMERA_PERMISSION_REQ_CODE);
-                } else {
-                    takePhoto();
+        Map<String, Object> map = new HashMap<>();
+        map.put("user_id",PersonInfoManager.INSTANCE.getUserId());
+        BaseOkGoUtils.postOkGoWithFile(TCAnchorPrepareActivity.this,map, UPLOAD,filePath, new ResultListener() {
+            @Override
+            public void onSucceeded(Object object) {
+                try {
+                    curretnCoverPath = (String) object;
+                    startLive();
+                }catch (Exception e){
+                    ToastUtils.s(getApplicationContext(),"视频发布失败");
+                    e.printStackTrace();
                 }
-                break;
-            case IMAGE_STORE:
-                mSourceFileUri = createCoverUri("_select");
-                Intent intent_album = new Intent("android.intent.action.GET_CONTENT");
-                intent_album.setType("image/*");
-                startActivityForResult(intent_album, IMAGE_STORE);
-                break;
-
-        }
+            }
+        });
     }
 
-    /**
-     *  打开摄像头拍照
-     *
-     */
-    private void takePhoto() {
-        Intent intent_photo = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent_photo.putExtra(MediaStore.EXTRA_OUTPUT, mSourceFileUri);
-        startActivityForResult(intent_photo, CAPTURE_IMAGE_CAMERA);
-    }
+
+
+
+
+
+
+
+
 
     /**
      *     /////////////////////////////////////////////////////////////////////////////////
@@ -527,7 +587,7 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
                 break;
             case TCConstants.CAMERA_PERMISSION_REQ_CODE:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    takePhoto();
+                    chooseImage(true);
                 }
                 break;
             default:
@@ -557,5 +617,10 @@ public class TCAnchorPrepareActivity extends Activity implements View.OnClickLis
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onUploadResult(int code, String url) {
+
     }
 }

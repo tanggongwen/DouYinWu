@@ -14,6 +14,7 @@ public class MyVideoPlayer extends JZVideoPlayerStandard {
 
     public interface OnItemClickListener {
         void onItemClick();
+        void onStatePlaying();
     }
 
     public MyVideoPlayer.OnItemClickListener myFinishListerer;
@@ -32,6 +33,18 @@ public class MyVideoPlayer extends JZVideoPlayerStandard {
     @Override
     public void onAutoCompletion() {
         super.onAutoCompletion();
-        myFinishListerer.onItemClick();
+        if (null!=myFinishListerer){
+
+            myFinishListerer.onItemClick();
+        }
+    }
+
+    @Override
+    public void onStatePlaying() {
+        super.onStatePlaying();
+        if (null!=myFinishListerer){
+
+            myFinishListerer.onStatePlaying();
+        }
     }
 }
