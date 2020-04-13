@@ -1,5 +1,7 @@
 package com.example.qd.douyinwu.fragment;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -25,6 +27,8 @@ import com.example.qd.douyinwu.utils.PersonInfoManager;
 public class MarketFragment extends Fragment {
     private View rootView;
     private WebView webView;
+    private MyWebViewListener listener;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -35,10 +39,15 @@ public class MarketFragment extends Fragment {
         return rootView;
     }
 
-
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        this.listener = (MyWebViewListener) context;
+    }
 
     private void initView(){
         webView = rootView.findViewById(R.id.webview);
+        listener.onWebViewBack(webView);
         WebSettings settings = webView.getSettings();
         settings.setDomStorageEnabled(true);
         settings.setJavaScriptEnabled(true);
@@ -98,6 +107,10 @@ public class MarketFragment extends Fragment {
         });
     }
 
+
+    public interface MyWebViewListener{
+        public void onWebViewBack(WebView webView);
+    }
 
 
 }

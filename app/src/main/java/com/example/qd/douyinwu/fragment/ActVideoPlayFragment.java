@@ -427,7 +427,7 @@ public class ActVideoPlayFragment extends Fragment {
             @Override
             public void onInitComplete(View view) {
                 //点击进入 0
-                playVideo(view, false);
+//                playVideo(view, false);
             }
 
             @Override
