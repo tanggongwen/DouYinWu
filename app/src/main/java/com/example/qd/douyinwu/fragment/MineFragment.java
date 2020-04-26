@@ -176,6 +176,10 @@ public class MineFragment extends Fragment {
                 }
             });
         }
+        @JavascriptInterface
+        public void logout(){
+            PersonInfoManager.INSTANCE.setUserBean(null);
+        }
     }
 
     private void handleup(ValueCallback<Uri[]> uploadFile) {
