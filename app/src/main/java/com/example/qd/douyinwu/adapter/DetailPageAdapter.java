@@ -8,24 +8,37 @@ import android.support.v4.app.FragmentPagerAdapter;
 import com.example.qd.douyinwu.been.LiveTypeBeen;
 import com.example.qd.douyinwu.fragment.HomeDetailInfoFragment;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DetailPageAdapter extends FragmentPagerAdapter {
-    private static int PAGE_COUNT;//表示要展示的页面数量
+    private  int PAGE_COUNT;//表示要展示的页面数量
     private Context mContext;
     private List<LiveTypeBeen> list;
+    private List<HomeDetailInfoFragment> homeDetailInfoFragments = new ArrayList<>();
 
     public DetailPageAdapter(Context context, FragmentManager fm, List<LiveTypeBeen> list) {
         super(fm);
         this.mContext = context;
         this.list = list;
         PAGE_COUNT=list.size();
+        homeDetailInfoFragments.clear();
+        for (LiveTypeBeen liveTypeBeen:list){
+            homeDetailInfoFragments.add(HomeDetailInfoFragment.newInstance(liveTypeBeen.getT_id()));
+        }
+    }
 
+    public void updateFragmenetDetail(){
+        if (homeDetailInfoFragments.size()>0){
+            for (HomeDetailInfoFragment fragment:homeDetailInfoFragments){
+                fragment.getMyZhiboList();
+            }
+        }
     }
 
     @Override
     public Fragment getItem(int position) {
-        return HomeDetailInfoFragment.newInstance(list.get(position).getT_id());
+        return homeDetailInfoFragments.get(position);
     }
 
     @Override

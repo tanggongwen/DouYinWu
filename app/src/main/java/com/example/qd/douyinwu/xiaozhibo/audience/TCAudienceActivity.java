@@ -327,7 +327,8 @@ public class TCAudienceActivity extends Activity implements IMLVBLiveRoomListene
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(TCAudienceActivity.this, WebActivity.class);
-                intent.putExtra("url","http://slive.sdyilian.top/View/Goods/goods_detail?user_id="+ PersonInfoManager.INSTANCE.getUserId() +"&goods_id="+goodsId+"&from=1");
+                intent.putExtra("url","http://slive.sdyilian.top/View/Goods/goods_detail?user_id="
+                        + PersonInfoManager.INSTANCE.getUserId() +"&goods_id="+goodsId+"&from=1"+"&show_id="+PersonInfoManager.INSTANCE.getUserId());
                 startActivity(intent);
             }
         });

@@ -29,6 +29,7 @@ public class HomeDetailInfoFragment extends NativeBaseFragment {
     private int PAGE = 1;
     private List<LiveData> list = new ArrayList<>();
     private MainLiveListAdapter adapter;
+    private boolean isFirst = true;
 
     public static HomeDetailInfoFragment newInstance(String param) {
         HomeDetailInfoFragment fragment = new HomeDetailInfoFragment();
@@ -77,7 +78,7 @@ public class HomeDetailInfoFragment extends NativeBaseFragment {
     }
 
 
-    private void getMyZhiboList(){
+    public void getMyZhiboList(){
         Map<String, Object> map = new HashMap<>();
         map.put("t_id",mParam);
         map.put("page",PAGE);
@@ -100,5 +101,17 @@ public class HomeDetailInfoFragment extends NativeBaseFragment {
                 }
             }
         });
+    }
+
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        if (isVisibleToUser){
+            if (isFirst){
+                isFirst = false;
+                return;
+            }
+            getMyZhiboList();
+        }
     }
 }

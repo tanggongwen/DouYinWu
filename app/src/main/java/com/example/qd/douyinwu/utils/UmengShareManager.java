@@ -24,6 +24,7 @@ public enum UmengShareManager {
 
     public void init(Context context){
         UMConfigure.init(context,"5e857ee10cafb24478000192","umeng1",UMConfigure.DEVICE_TYPE_PHONE,"");
+        UMConfigure.setLogEnabled(true);
         PlatformConfig.setWeixin(appId,"17024fb3b01d32d9557ae17ccc5cb571");
         shareAPI = UMShareAPI.get(context);
     }

@@ -130,7 +130,8 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(mContext, WebActivity.class);
-                intent.putExtra("url","http://slive.sdyilian.top/View/Goods/goods_detail?user_id="+PersonInfoManager.INSTANCE.getUserId()+"&goods_id="+mDatas.get(position).getGoods_id()+"&from=1");
+                intent.putExtra("url","http://slive.sdyilian.top/View/Goods/goods_detail?user_id="+PersonInfoManager.INSTANCE.getUserId()
+                        +"&goods_id="+mDatas.get(position).getGoods_id()+"&from=1"+"&show_id="+PersonInfoManager.INSTANCE.getUserId());
                 mContext.startActivity(intent);
             }
         });

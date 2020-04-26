@@ -40,6 +40,7 @@ public class LiveFragment extends Fragment {
     private ViewPager viewpager;
     private FragmentManager fm;
     private List<LiveTypeBeen> mData;
+    private DetailPageAdapter detailPageAdapter;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -73,7 +74,8 @@ public class LiveFragment extends Fragment {
 
     private void setAdapter(){
         //        为viewpager设置适配器
-        viewpager.setAdapter(new DetailPageAdapter(getContext(), fm,mData));
+        detailPageAdapter = new DetailPageAdapter(getContext(),fm,mData);
+        viewpager.setAdapter(detailPageAdapter);
 
         tabs.setupWithViewPager(viewpager);
     }
@@ -98,7 +100,7 @@ public class LiveFragment extends Fragment {
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         if (isVisibleToUser){
-            getZhiboListType();
+//          getZhiboListType();
         }
         super.setUserVisibleHint(isVisibleToUser);
     }
